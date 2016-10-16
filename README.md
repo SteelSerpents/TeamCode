@@ -16,7 +16,7 @@ git submodule init
 git submodule add https://github.com/SteelSerpents/FTCVision ftc-vision
 ```
 
-Open `FtcRobotController/src/main/AndroidManifest.xml` in a text editor like notepad++ (https://notepad-plus-plus.org/download/v7.1.html) and add the following line one line above the </application> tag and save the file.
+Open `FtcRobotController/src/main/AndroidManifest.xml` in a text editor like notepad++ (https://notepad-plus-plus.org/download/v7.1.html) and add the following line one line above the `</application>` tag and save the file.
 
 `<uses-permission android:name="android.permission.CAMERA" android:required="true" />`
 
