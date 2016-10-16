@@ -99,14 +99,14 @@ public class SteelSerpentsRobot
      * Sets the motor speeds to the appropriate values for a mecanum-wheeled robot. Must use the drive() command to send the drive instruction to the robot.
      * @param robotVelocity The speed at which you want the robot to translate over the gamefield. Range: [-1,1]
      * @param directionOfMovement The heading in radians in which you want the robot to translate. Range: [0,2PI)
-     * @param rateOfRotation The rate of rotation and direction of rotation you wish to move in. Range: [-1,1]
+     * @param turnSpeed The rate of rotation and direction of rotation you wish to move in. Range: [-1,1]
      */
-    public void setMotorValues(double robotVelocity, double directionOfMovement, double rateOfRotation)
+    public void setMotorValues(double robotVelocity, double directionOfMovement, double turnSpeed)
     {
-        frontLeftPower  = getFrontLeftMecanumVelocity(  robotVelocity, -directionOfMovement, -rateOfRotation);
-        frontRightPower = getFrontRightMecanumVelocity( robotVelocity, -directionOfMovement, -rateOfRotation);
-        backLeftPower   = getBackLeftMecanumVelocity(   robotVelocity, -directionOfMovement, -rateOfRotation);
-        backRightPower  = getBackRightMecanumVelocity(  robotVelocity, -directionOfMovement, -rateOfRotation);
+        frontLeftPower  = getFrontLeftMecanumVelocity(  robotVelocity, -directionOfMovement, -turnSpeed);
+        frontRightPower = getFrontRightMecanumVelocity( robotVelocity, -directionOfMovement, -turnSpeed);
+        backLeftPower   = getBackLeftMecanumVelocity(   robotVelocity, -directionOfMovement, -turnSpeed);
+        backRightPower  = getBackRightMecanumVelocity(  robotVelocity, -directionOfMovement, -turnSpeed);
     }
 
     /**
