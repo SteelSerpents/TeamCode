@@ -66,7 +66,7 @@ public class SophiaBot
         //right.setPosition(initr);
         //pusherr.setPosition(startrp);
         //pusherl.setPosition(startlp);
-        lift.setPosition(0);
+        lift.setPosition(0.5);
     }
 
     public void drivedirect(double leftfront,double rightfront,double leftback,double rightback)
@@ -136,11 +136,11 @@ public class SophiaBot
     {
         if(pos == "Up")
         {
-            lift.setPosition(1);
+            //lift.setPosition();
         }
         else if(pos == "Down")
         {
-            lift.setPosition(0);
+            lift.setPosition(0.5);
         }
     }
 
