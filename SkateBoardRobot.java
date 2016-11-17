@@ -1,19 +1,19 @@
 package org.firstinspires.ftc.teamcode;
 import android.util.Log;
 
-import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.I2cAddr;
+import com.qualcomm.robotcore.hardware.I2cDevice;
 import com.qualcomm.robotcore.hardware.I2cDeviceReader;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.TouchSensor;
 
 /**
  * <h1>SteelSerpentsRobot</h1>
  * The robot class used by the SteelSerpents FTC team. This class contains all of the robot hardware,
  * drive instructions, and other details specifically relating to controlling the robot.
  */
-public class SteelSerpentsRobot
+public class SkateBoardRobot
 {
 
     public float DEAD_ZONE = 0.15f;
@@ -31,57 +31,36 @@ public class SteelSerpentsRobot
     private Servo right;
     private Servo pusherr;
     private Servo pusherl;
+    private I2cDevice range;
     private I2cDeviceReader rangeReader;
     private byte rangeReadings[];
-    public DcMotor sweeper;
-    private Servo lift;
-
-    private ColorSensor lineback;
-    private RangeSensor range;
-    private ColorSensor line;
-    private ColorSensor beacon;
-    private TouchSensor botstop;
-    double startlp = 0;
-    double startrp = 1;
-    double initl = 1;
-    double initr = 0;
 
     /**
      * Sets up the SteelSerpents robot by initializing its hardware.
      * @param newHardwareMap The robot HardwareMap that is provided by our robot's OpMode.
      */
-    SteelSerpentsRobot(HardwareMap newHardwareMap)
+    SkateBoardRobot(HardwareMap newHardwareMap)
     {
         this.hardwareMap = newHardwareMap;
-        lift =hardwareMap.servo.get("lift");
-        sweeper = hardwareMap.dcMotor.get("sweeper");
-        //left = hardwareMap.servo.get("left");
-        //right = hardwareMap.servo.get("right");
-        //pusherr = hardwareMap.servo.get("pusherr");
-        //pusherl = hardwareMap.servo.get("pusherl");
-        //lineback = hardwareMap.colorSensor.get("lineback");
-        frontLeftMotor = hardwareMap.dcMotor.get("frontl");
-        frontRightMotor = hardwareMap.dcMotor.get("frontr");
+//        servo = hardwareMap.servo.get("servo");
+        left = hardwareMap.servo.get("left");
+        right = hardwareMap.servo.get("right");
+        pusherr = hardwareMap.servo.get("pusherr");
+        pusherl = hardwareMap.servo.get("pusherl");
         backLeftMotor = hardwareMap.dcMotor.get("backl");
         backRightMotor = hardwareMap.dcMotor.get("backr");
-        //beacon = hardwareMap.colorSensor.get("beacon");
-        //line = hardwareMap.colorSensor.get("line");
-        //botstop = hardwareMap.touchSensor.get("botstop");
-        //range = new RangeSensor(hardwareMap);
-        frontLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        frontLeftMotor = hardwareMap.dcMotor.get("frontl");
+        frontRightMotor = hardwareMap.dcMotor.get("frontr");
         frontRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        backLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        backRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        //beacon.setI2cAddress(I2cAddr.create8bit(0x3a));
         backRightMotor.setDirection(DcMotor.Direction.REVERSE);
         frontRightMotor.setDirection(DcMotor.Direction.REVERSE);
-        //line.setI2cAddress(I2cAddr.create8bit(0x3c));
-        //lineback.setI2cAddress(I2cAddr.create8bit(0x1a));
-        //left.setPosition(initl);
-        //right.setPosition(initr);
-        //pusherr.setPosition(startrp);
-        //pusherl.setPosition(startlp);
-        lift.setPosition(0.5);
+        left.setPosition(1);
+        right.setPosition(0);
+        pusherr.setPosition(0);
+        I2cDevice range;
+        range = hardwareMap.i2cDevice.get("range");
+        rangeReader = new I2cDeviceReader(range, new I2cAddr(0x28), 0x04, 2);
+        byte rangeReadings[];
     }
     /**
      * Gets the speed for the front left wheel.

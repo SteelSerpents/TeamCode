@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode;
 import android.util.Log;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 @TeleOp(name = "SkateboardTeleOp", group = "TeleOp")
 public class SkateboardTeleOp extends OpMode
