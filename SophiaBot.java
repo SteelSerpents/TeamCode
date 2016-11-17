@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.I2cAddr;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
+import com.qualcomm.robotcore.hardware.configuration.DeviceConfiguration;
 
 public class SophiaBot
 {
@@ -13,7 +14,9 @@ public class SophiaBot
     public DcMotor backr;
     public DcMotor frontl;
     public DcMotor frontr;
-    private Servo left;
+    public DcMotor sweeper;
+    private Servo lift;
+    /*private Servo left;
     private Servo right;
     private Servo pusherr;
     private Servo pusherl;
@@ -22,7 +25,8 @@ public class SophiaBot
     private ColorSensor beacon;
     private ColorSensor lineback;
     private TouchSensor botstop;
-    private int colorvalue;
+    */
+    /*private int colorvalue;
     double initl = 1;
     double initr = 0;
     double startl = 0;
@@ -35,166 +39,36 @@ public class SophiaBot
     double endrp = 0.6;
     private boolean touch;
     private int distance;
+    */
     SophiaBot(HardwareMap newHardwareMap)
     {
         this.hardwareMap = newHardwareMap;
-        left = hardwareMap.servo.get("left");
-        right = hardwareMap.servo.get("right");
-        pusherr = hardwareMap.servo.get("pusherr");
-        pusherl = hardwareMap.servo.get("pusherl");
+        //left = hardwareMap.servo.get("left");
+        //right = hardwareMap.servo.get("right");
+        //pusherr = hardwareMap.servo.get("pusherr");
+        //pusherl = hardwareMap.servo.get("pusherl");
         backl = hardwareMap.dcMotor.get("backl");
         backr = hardwareMap.dcMotor.get("backr");
-        lineback = hardwareMap.colorSensor.get("lineback");
+        //lineback = hardwareMap.colorSensor.get("lineback");
         frontl = hardwareMap.dcMotor.get("frontl");
         frontr = hardwareMap.dcMotor.get("frontr");
-        beacon = hardwareMap.colorSensor.get("beacon");
-        line = hardwareMap.colorSensor.get("line");
-        botstop = hardwareMap.touchSensor.get("botstop");
-        range = new RangeSensor(hardwareMap);
+        //beacon = hardwareMap.colorSensor.get("beacon");
+        //line = hardwareMap.colorSensor.get("line");
+        //botstop = hardwareMap.touchSensor.get("botstop");
+        //range = new RangeSensor(hardwareMap);
         frontr.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        beacon.setI2cAddress(I2cAddr.create8bit(0x3a));
+        //beacon.setI2cAddress(I2cAddr.create8bit(0x3a));
         backr.setDirection(DcMotor.Direction.REVERSE);
         frontr.setDirection(DcMotor.Direction.REVERSE);
-        line.setI2cAddress(I2cAddr.create8bit(0x3c));
-        lineback.setI2cAddress(I2cAddr.create8bit(0x1a));
-        left.setPosition(initl);
-        right.setPosition(initr);
-        pusherr.setPosition(startrp);
-        pusherl.setPosition(startlp);
+        //line.setI2cAddress(I2cAddr.create8bit(0x3c));
+        //lineback.setI2cAddress(I2cAddr.create8bit(0x1a));
+        //left.setPosition(initl);
+        //right.setPosition(initr);
+        //pusherr.setPosition(startrp);
+        //pusherl.setPosition(startlp);
+        lift.setPosition(0);
     }
-    /*
-    public boolean touch(String sensor)
-    {
-        if(sensor=="botstop")
-        {
-            if(botstop.isPressed())
-            {
-                touch = true;
-            }
-            else if(!botstop.isPressed())
-            {
-                touch = false;
-            }
-        }
-        return touch;
-    }
-    */
-    public void refresh()
-    {
-        stop();
-        push(null);
-        grab(null);
-        beacon.enableLed(false);
-        line.enableLed(false);
-        lineback.enableLed(false);
-        beacon.enableLed(true);
-        line.enableLed(true);
-        line.enableLed(true);
-        beacon.enableLed(false);
-        line.enableLed(false);
-        lineback.enableLed(false);
-    }
-    public int us()
-    {
-        return range.getus();
-    }
-    public int ods()
-    {
-        return range.getods();
-    }
-    public boolean touch() {
-        if (botstop.isPressed()) {
-            touch = true;
-        } else if (!botstop.isPressed()) {
-            touch = false;
-        }
-        return touch;
-    }
-    public int color(String sensor,String color,boolean onoroff)
-    {
-        if(sensor=="beacon")
-        {
-            if(onoroff)
-            {
-                beacon.enableLed(true);
-            }
-            else if(!onoroff)
-            {
-                beacon.enableLed(false);
-            }
-            if(color=="white")
-            {
-                colorvalue=beacon.alpha();
-            }
-            else if(color=="red")
-            {
-                colorvalue=beacon.red();
-            }
-            else if(color=="blue")
-            {
-                colorvalue=beacon.blue();
-            }
-            else if(color=="green")
-            {
-                colorvalue=beacon.green();
-            }
-        }
-        if(sensor=="lineback")
-        {
-            if(onoroff)
-            {
-                lineback.enableLed(true);
-            }
-            else if(!onoroff)
-            {
-                lineback.enableLed(false);
-            }
-            if(color=="white")
-            {
-                colorvalue=lineback.alpha();
-            }
-            else if(color=="red")
-            {
-                colorvalue=lineback.red();
-            }
-            else if(color=="blue")
-            {
-                colorvalue=lineback.blue();
-            }
-            else if(color=="green")
-            {
-                colorvalue=lineback.green();
-            }
-        }
-        else if(sensor=="line")
-        {
-            if(onoroff)
-            {
-                line.enableLed(true);
-            }
-            else if(!onoroff)
-            {
-                line.enableLed(false);
-            }
-            if(color=="white")
-            {
-                colorvalue=line.alpha();
-            }
-            else if(color=="red")
-            {
-                colorvalue=line.red();
-            }
-            else if(color=="blue")
-            {
-                colorvalue=line.blue();
-            }
-            else if(color=="green")
-            {
-                colorvalue=line.green();
-            }
-        }
-        return colorvalue;
-    }
+
     public void drivedirect(double leftfront,double rightfront,double leftback,double rightback)
     {
         backl.setPower(leftback);
@@ -257,55 +131,32 @@ public class SophiaBot
         frontl.setPower(0);
         frontr.setPower(0);
     }
-    public void grab(String which)
+
+    public void lift(String pos)
     {
-        if(which=="left")
+        if(pos == "Up")
         {
-            left.setPosition(endl);
-            right.setPosition(startr);
+            lift.setPosition(1);
         }
-        else if(which=="right")
+        else if(pos == "Down")
         {
-            right.setPosition(endr);
-            left.setPosition(startl);
-        }
-        else if(which=="both")
-        {
-            right.setPosition(endr);
-            left.setPosition(endl);
-        }
-        else if(which=="rest")
-        {
-            left.setPosition(initl);
-            right.setPosition(initr);
-        }
-        else
-        {
-            left.setPosition(startl);
-            right.setPosition(startr);
+            lift.setPosition(0);
         }
     }
-    public void push(String which)
+
+    public void sweeper(String dir)
     {
-        if(which=="left")
+        if(dir == "In")
         {
-            pusherl.setPosition(endlp);
-            pusherr.setPosition(startrp);
+            sweeper.setPower(-1);
         }
-        else if(which=="right")
+        else if(dir == "Out")
         {
-            pusherr.setPosition(endrp);
-            pusherl.setPosition(startlp);
+            sweeper.setPower(1);
         }
-        else if(which=="both")
+        else if(dir == "Stop")
         {
-            pusherr.setPosition(endrp);
-            pusherl.setPosition(endlp);
-        }
-        else
-        {
-            pusherl.setPosition(startlp);
-            pusherr.setPosition(startrp);
+            sweeper.setPower(0);
         }
     }
 }
