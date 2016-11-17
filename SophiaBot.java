@@ -1,4 +1,5 @@
 package org.firstinspires.ftc.teamcode;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -43,6 +44,8 @@ public class SophiaBot
     SophiaBot(HardwareMap newHardwareMap)
     {
         this.hardwareMap = newHardwareMap;
+        lift =hardwareMap.servo.get("lift");
+        sweeper = hardwareMap.dcMotor.get("sweeper");
         //left = hardwareMap.servo.get("left");
         //right = hardwareMap.servo.get("right");
         //pusherr = hardwareMap.servo.get("pusherr");
