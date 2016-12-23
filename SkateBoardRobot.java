@@ -1,6 +1,9 @@
 package org.firstinspires.ftc.teamcode;
+import android.os.SystemClock;
 import android.util.Log;
 
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.I2cAddr;
@@ -13,7 +16,7 @@ import com.qualcomm.robotcore.hardware.Servo;
  * The robot class used by the SteelSerpents FTC team. This class contains all of the robot hardware,
  * drive instructions, and other details specifically relating to controlling the robot.
  */
-public class SkateBoardRobot
+public class SkateBoardRobot extends SteelSerpentsRobot
 {
 
     public float DEAD_ZONE = 0.15f;
@@ -27,13 +30,16 @@ public class SkateBoardRobot
     private double frontLeftPower  = 0;
     private double frontRightPower = 0;
 //    private Servo servo;
-    private Servo left;
-    private Servo right;
-    private Servo pusherr;
-    private Servo pusherl;
+//    private Servo left;
+//    private Servo right;
+//    private Servo pusherr;
+//    private Servo pusherl;
     private I2cDevice range;
     private I2cDeviceReader rangeReader;
+    public ModernRoboticsI2cGyro gyro;   // Hardware Device Object
     private byte rangeReadings[];
+    long lastTurnTime = 0;
+    double lastTurnDistance = 0;
 
     /**
      * Sets up the SteelSerpents robot by initializing its hardware.
@@ -41,26 +47,42 @@ public class SkateBoardRobot
      */
     SkateBoardRobot(HardwareMap newHardwareMap)
     {
+        super(newHardwareMap);
         this.hardwareMap = newHardwareMap;
 //        servo = hardwareMap.servo.get("servo");
-        left = hardwareMap.servo.get("left");
-        right = hardwareMap.servo.get("right");
-        pusherr = hardwareMap.servo.get("pusherr");
-        pusherl = hardwareMap.servo.get("pusherl");
+//        left = hardwareMap.servo.get("left");
+//        right = hardwareMap.servo.get("right");
+//        pusherr = hardwareMap.servo.get("pusherr");
+//        pusherl = hardwareMap.servo.get("pusherl");
         backLeftMotor = hardwareMap.dcMotor.get("backl");
         backRightMotor = hardwareMap.dcMotor.get("backr");
         frontLeftMotor = hardwareMap.dcMotor.get("frontl");
         frontRightMotor = hardwareMap.dcMotor.get("frontr");
-        frontRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        frontRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        frontLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        backRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        backLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         backRightMotor.setDirection(DcMotor.Direction.REVERSE);
         frontRightMotor.setDirection(DcMotor.Direction.REVERSE);
-        left.setPosition(1);
-        right.setPosition(0);
-        pusherr.setPosition(0);
+        // get a reference to a Modern Robotics GyroSensor object.
+        gyro = (ModernRoboticsI2cGyro)hardwareMap.gyroSensor.get("gyro");
+        gyro.calibrate();
+//        left.setPosition(1);
+//        right.setPosition(0);
+//        pusherr.setPosition(0);
         I2cDevice range;
         range = hardwareMap.i2cDevice.get("range");
         rangeReader = new I2cDeviceReader(range, new I2cAddr(0x28), 0x04, 2);
         byte rangeReadings[];
+    }
+
+    /**
+     * Gets the current heading relative to when the gyro was calibrated.
+     * @return
+     */
+    public double getHeadingInDegrees()
+    {
+        return gyro.getHeading();
     }
     /**
      * Gets the speed for the front left wheel.
@@ -107,10 +129,6 @@ public class SkateBoardRobot
         frontRightPower = getFrontRightMecanumVelocity( robotVelocity, -directionOfMovement, -turnSpeed);
         backLeftPower   = getBackLeftMecanumVelocity(   robotVelocity, -directionOfMovement, -turnSpeed);
         backRightPower  = getBackRightMecanumVelocity(  robotVelocity, -directionOfMovement, -turnSpeed);
-        print("Front Left  Power: ", frontLeftPower);
-        print("Front Right Power: ", frontRightPower);
-        print("Back  Left  Power: ", backLeftPower);
-        print("Back  Right Power: ", backRightPower);
     }
 
     /**
@@ -128,6 +146,54 @@ public class SkateBoardRobot
         backRightMotor.setPower(    backRightPower  );
     }
 
+    /**
+     *
+     * @param robotVelocity Speed of the robot, from 0 to 1
+     * @param directionOfMovement The robot heading in radians, from 0 to 2pi
+     * @param turnSpeed Speed of the turn, from 0 to 1
+     */
+    public void drive(double robotVelocity, double directionOfMovement, double turnSpeed)
+    {
+        this.setMotorValues(robotVelocity, directionOfMovement, turnSpeed);
+        this.drive();
+    }
+
+    /**
+     * Turns the robot to a new heading relative to the heading set when the gyro was calibrated.
+     * @param newHeadingInDegrees
+     */
+    public void turnToHeading(double newHeadingInDegrees)
+    {
+        double marginOfError = 5.0;
+        double turnSpeed = 0.15;
+        while (Math.abs(this.getHeadingInDegrees() - newHeadingInDegrees) > marginOfError)
+        {
+            int turnDirection = -1;
+            double distRight = newHeadingInDegrees - this.getHeadingInDegrees();
+            double distLeft = this.getHeadingInDegrees() - newHeadingInDegrees;
+            if (distRight < 0)
+                distRight += 360;
+            if (distLeft < 0)
+                distLeft += 360;
+
+            double turnDistance = distRight;
+            if (distLeft < distRight)
+            {
+                turnDirection = 1;
+                turnDistance = distLeft;
+            }
+            long thisTurnTime = System.currentTimeMillis();
+            double changeInTime = (double)(thisTurnTime - lastTurnTime);
+            double robotTurnVelocity = (turnDistance - lastTurnDistance) / changeInTime;
+            double Kp = 0.005;
+            double Kd = 10;
+//            double outputSpeed = Kp * turnDistance - Kd * robotTurnVelocity;
+            double outputSpeed = Kp * turnDistance;
+            this.drive(0, 0, clamp(outputSpeed * turnDirection));
+            lastTurnTime = System.currentTimeMillis();
+            lastTurnDistance = turnDistance;
+        }
+    }
 
     public double clamp(double value, int min, int max)
     {
