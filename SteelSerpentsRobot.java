@@ -1,12 +1,10 @@
 package org.firstinspires.ftc.teamcode;
 import android.util.Log;
 
-import com.qualcomm.robotcore.hardware.ColorSensor;
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.I2cDeviceReader;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.TouchSensor;
 
 /**
  * <h1>SteelSerpentsRobot</h1>
@@ -15,8 +13,6 @@ import com.qualcomm.robotcore.hardware.TouchSensor;
  */
 public class SteelSerpentsRobot
 {
-
-    public float DEAD_ZONE = 0.15f;
     private HardwareMap hardwareMap;
     private DcMotor backLeftMotor;
     private DcMotor backRightMotor;
@@ -26,26 +22,9 @@ public class SteelSerpentsRobot
     private double backRightPower  = 0;
     private double frontLeftPower  = 0;
     private double frontRightPower = 0;
-//    private Servo servo;
-    private Servo left;
-    private Servo right;
-    private Servo pusherr;
-    private Servo pusherl;
-    private I2cDeviceReader rangeReader;
-    private byte rangeReadings[];
-    public DcMotor sweeper;
-    private Servo lift;
-
-    private ColorSensor lineback;
-    private RangeSensor range;
-    private ColorSensor line;
-    private ColorSensor beacon;
-    private TouchSensor botstop;
-    double startlp = 0;
-    double startrp = 1;
-    double initl = 1;
-    double initr = 0;
-
+    public ModernRoboticsI2cGyro gyro;
+    long lastTurnTime = 0;
+    double lastTurnDistance = 0;
     /**
      * Sets up the SteelSerpents robot by initializing its hardware.
      * @param newHardwareMap The robot HardwareMap that is provided by our robot's OpMode.
@@ -53,36 +32,23 @@ public class SteelSerpentsRobot
     SteelSerpentsRobot(HardwareMap newHardwareMap)
     {
         this.hardwareMap = newHardwareMap;
-        lift =hardwareMap.servo.get("lift");
-        sweeper = hardwareMap.dcMotor.get("sweeper");
-        //left = hardwareMap.servo.get("left");
-        //right = hardwareMap.servo.get("right");
-        //pusherr = hardwareMap.servo.get("pusherr");
-        //pusherl = hardwareMap.servo.get("pusherl");
-        //lineback = hardwareMap.colorSensor.get("lineback");
         frontLeftMotor = hardwareMap.dcMotor.get("frontl");
         frontRightMotor = hardwareMap.dcMotor.get("frontr");
         backLeftMotor = hardwareMap.dcMotor.get("backl");
         backRightMotor = hardwareMap.dcMotor.get("backr");
-        //beacon = hardwareMap.colorSensor.get("beacon");
-        //line = hardwareMap.colorSensor.get("line");
-        //botstop = hardwareMap.touchSensor.get("botstop");
-        //range = new RangeSensor(hardwareMap);
-        frontLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        frontRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        backLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        backRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        //beacon.setI2cAddress(I2cAddr.create8bit(0x3a));
         backRightMotor.setDirection(DcMotor.Direction.REVERSE);
         frontRightMotor.setDirection(DcMotor.Direction.REVERSE);
-        //line.setI2cAddress(I2cAddr.create8bit(0x3c));
-        //lineback.setI2cAddress(I2cAddr.create8bit(0x1a));
-        //left.setPosition(initl);
-        //right.setPosition(initr);
-        //pusherr.setPosition(startrp);
-        //pusherl.setPosition(startlp);
-        lift.setPosition(0.5);
-    }
+        gyro = (ModernRoboticsI2cGyro)hardwareMap.gyroSensor.get("gyro");
+        // Calibrate the gyro
+        gyro.calibrate();
+    }/**
+ * Gets the current heading relative to when the gyro was calibrated.
+ * @return
+ */
+public double getHeadingInDegrees()
+{
+    return gyro.getHeading();
+}
     /**
      * Gets the speed for the front left wheel.
      * Based on this paper <a href="http://thinktank.wpi.edu/resources/346/ControllingMecanumDrive.pdf">Controlling Mecanum Drive</a>
@@ -128,10 +94,6 @@ public class SteelSerpentsRobot
         frontRightPower = getFrontRightMecanumVelocity( robotVelocity, -directionOfMovement, -turnSpeed);
         backLeftPower   = getBackLeftMecanumVelocity(   robotVelocity, -directionOfMovement, -turnSpeed);
         backRightPower  = getBackRightMecanumVelocity(  robotVelocity, -directionOfMovement, -turnSpeed);
-        print("Front Left  Power: ", frontLeftPower);
-        print("Front Right Power: ", frontRightPower);
-        print("Back  Left  Power: ", backLeftPower);
-        print("Back  Right Power: ", backRightPower);
     }
 
     /**
@@ -149,6 +111,54 @@ public class SteelSerpentsRobot
         backRightMotor.setPower(    backRightPower  );
     }
 
+    /**
+     *
+     * @param robotVelocity Speed of the robot, from 0 to 1
+     * @param directionOfMovement The robot heading in radians, from 0 to 2pi
+     * @param turnSpeed Speed of the turn, from 0 to 1
+     */
+    public void drive(double robotVelocity, double directionOfMovement, double turnSpeed)
+    {
+        this.setMotorValues(robotVelocity, directionOfMovement, turnSpeed);
+        this.drive();
+    }
+
+    /**
+     * Turns the robot to a new heading relative to the heading set when the gyro was calibrated.
+     * @param newHeadingInDegrees
+     */
+    public void turnToHeading(double newHeadingInDegrees)
+    {
+        double marginOfError = 5.0;
+        double turnSpeed = 0.15;
+        while (Math.abs(this.getHeadingInDegrees() - newHeadingInDegrees) > marginOfError)
+        {
+            int turnDirection = -1;
+            double distRight = newHeadingInDegrees - this.getHeadingInDegrees();
+            double distLeft = this.getHeadingInDegrees() - newHeadingInDegrees;
+            if (distRight < 0)
+                distRight += 360;
+            if (distLeft < 0)
+                distLeft += 360;
+
+            double turnDistance = distRight;
+            if (distLeft < distRight)
+            {
+                turnDirection = 1;
+                turnDistance = distLeft;
+            }
+            long thisTurnTime = System.currentTimeMillis();
+            double changeInTime = (double)(thisTurnTime - lastTurnTime);
+            double robotTurnVelocity = (turnDistance - lastTurnDistance) / changeInTime;
+            double Kp = 0.005;
+            double Kd = 10;
+//            double outputSpeed = Kp * turnDistance - Kd * robotTurnVelocity;
+            double outputSpeed = Kp * turnDistance;
+            this.drive(0, 0, clamp(outputSpeed * turnDirection));
+            lastTurnTime = System.currentTimeMillis();
+            lastTurnDistance = turnDistance;
+        }
+    }
 
     public double clamp(double value, int min, int max)
     {
